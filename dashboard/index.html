@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command Center — Site Status</title>
+<style>
+  :root{
+    --bg:#0a0a12; --card:#14141f; --line:#23233a;
+    --accent:#00e5ff; --ok:#00e676; --bad:#ff3b5c;
+    --text:#eef2ff; --muted:#8b90a7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{padding:30px 20px 6px;text-align:center}
+  h1{margin:0;font-size:1.5rem;letter-spacing:.14em;text-transform:uppercase}
+  h1 .bolt{color:var(--accent)}
+  .sub{color:var(--muted);font-size:.9rem;margin-top:6px}
+  main{max-width:640px;margin:0 auto;padding:14px 16px 40px}
+  .card{background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:18px;margin:12px 0}
+  .row{display:flex;align-items:center;gap:12px}
+  .dot{width:14px;height:14px;border-radius:50%;flex:none}
+  .dot.ok{background:var(--ok);box-shadow:0 0 12px var(--ok)}
+  .dot.bad{background:var(--bad);box-shadow:0 0 12px var(--bad);
+    animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  .url{font-weight:700;font-size:1.05rem;word-break:break-all}
+  .meta{color:var(--muted);font-size:.85rem;margin-top:10px;
+    display:flex;gap:16px;flex-wrap:wrap}
+  .updated{text-align:center;color:var(--muted);font-size:.85rem;margin:18px 0 8px}
+  .actions{text-align:center}
+  .btn{display:inline-block;padding:11px 20px;border-radius:10px;
+    border:1px solid var(--accent);color:var(--accent);
+    text-decoration:none;font-weight:600}
+  .error{color:var(--bad);text-align:center}
+  footer{text-align:center;color:var(--muted);font-size:.75rem;padding-bottom:24px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="bolt">⚡</span> Command Center</h1>
+  <div class="sub">Jake's mission control — run by voice, logged on GitHub</div>
+</header>
+<main>
+  <div id="cards"><div class="card">Loading…</div></div>
+  <div class="updated" id="updated"></div>
+  <div class="actions">
+    <a class="btn" href="https://github.com/herskyott-stack/command-center/actions">Recent workflow runs</a>
+  </div>
+</main>
+<footer>Orion · command-center · Phase 1</footer>
+<script>
+fetch("status.json", {cache: "no-store"})
+  .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(function(d){
+    var wrap = document.getElementById("cards");
+    if(!d.sites || !d.sites.length){
+      wrap.innerHTML = '<div class="card">No checks yet — the first health check hasn\'t run.</div>';
+    } else {
+      wrap.innerHTML = d.sites.map(function(s){
+        var ssl = (s.ssl_days_left === null || s.ssl_days_left === undefined)
+          ? "SSL n/a" : "SSL " + s.ssl_days_left + " days left";
+        return '<div class="card">' +
+          '<div class="row"><span class="dot ' + (s.ok ? "ok" : "bad") + '"></span>' +
+          '<span class="url">' + s.url + '</span></div>' +
+          '<div class="meta"><span>HTTP ' + s.http_status + '</span>' +
+          '<span>' + s.response_time_ms + ' ms</span>' +
+          '<span>' + ssl + '</span></div></div>';
+      }).join("");
+    }
+    document.getElementById("updated").textContent = "Last check: " + d.updated;
+  })
+  .catch(function(e){
+    document.getElementById("cards").innerHTML =
+      '<div class="card error">Could not load status.json (' + e.message + ')</div>';
+  });
+</script>
+</body>
+</html>
